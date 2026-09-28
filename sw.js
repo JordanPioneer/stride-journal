@@ -1,6 +1,6 @@
 // Offline support: serve saved copies instantly, refresh them in the background.
 // Bump CACHE when you change files so phones pick up the new version.
-const CACHE = "stride-v2";
+const CACHE = "stride-v3";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {

@@ -141,6 +141,8 @@ textarea{min-height:70px;resize:vertical}
 .wk .d{font-size:.85rem;color:var(--muted);min-width:0}
 .wk .t{font-weight:700}
 .wk .s{text-align:right;font-size:.8rem;font-weight:700}
+.runbox{background:var(--sunk);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.tag{display:inline-block;font-size:.7rem;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--run);color:var(--surface);vertical-align:2px;margin-left:4px}
 .chart{width:100%;height:auto;display:block}
 .chart text{fill:var(--muted);font-size:11px;font-family:var(--body)}
 
@@ -291,7 +293,7 @@ button{touch-action:manipulation}
 
   <!-- PLAN -->
   <section id="view-plan" class="stack" hidden style="gap:20px">
-    <header class="stack" style="gap:2px"><div class="eyebrow">12-week walking plan</div><h1>Your plan</h1></header>
+    <header class="stack" style="gap:2px"><div class="eyebrow" id="plan-eyebrow">Walking plan</div><h1>Your plan</h1></header>
     <div id="plan-body" class="stack" style="gap:20px"></div>
     <form class="card stack" id="p-form" novalidate>
       <div class="row between"><h2 id="p-form-title">Set up your plan</h2></div>
@@ -328,6 +330,14 @@ button{touch-action:manipulation}
           <button type="button" data-v="1.5" aria-pressed="false">1½ lb / wk</button>
         </div>
       </div>
+      <div class="stack" style="gap:6px">
+        <span class="lbl">Plan goal</span>
+        <div class="seg" role="group" aria-label="Plan goal" id="p-track">
+          <button type="button" data-v="walk" aria-pressed="true">Walking</button>
+          <button type="button" data-v="run" aria-pressed="false">Build up to running</button>
+        </div>
+        <span class="muted" style="font-size:.8rem">Both start with easy walks. The running plan adds jog-walk intervals from week 5.</span>
+      </div>
       <label>Plan starts<input type="date" id="p-start"></label>
       <div class="btn-row">
         <button class="btn" type="submit" id="p-save">Build my plan</button>
@@ -340,11 +350,12 @@ button{touch-action:manipulation}
       <ul class="notes">
         <li><b>Calorie target.</b> Your resting burn comes from the Mifflin-St Jeor equation, the formula the Academy of Nutrition and Dietetics recommends. It's multiplied by your everyday activity, then about 500 calories a day come off for each pound a week you want to lose.</li>
         <li><b>A safe floor.</b> The target never drops below 1,200 calories a day for women or 1,500 for men without a doctor's supervision.</li>
-        <li><b>Walking minutes.</b> The American College of Sports Medicine finds 150 to 250 minutes a week gives modest loss, more than 250 minutes a week gives meaningful loss, and 200 to 300 minutes a week helps keep weight off. The plan builds from 50 minutes to 250 over 12 weeks.</li>
+        <li><b>Walking minutes.</b> The American College of Sports Medicine finds 150 to 250 minutes a week gives modest loss, more than 250 minutes a week gives meaningful loss, and 200 to 300 minutes a week helps keep weight off. The walking plan builds from 50 minutes to 250 over 12 weeks.</li>
+        <li><b>Running.</b> The running plan starts with 4 walking weeks, then follows the NHS Couch to 5K program: 3 jog-walk workouts a week for 9 weeks, ending with 30 minutes of nonstop running. Two walks a week keep total minutes climbing. Repeating a week is normal.</li>
         <li><b>Adjusting as you go.</b> As you lose weight, your body burns a little less. The target recalculates from every new weigh-in so the plan keeps working.</li>
         <li><b>Walk calories are a bonus.</b> Calories from walks aren't added back to your food target. Those estimates tend to run high, so leaving them out keeps the plan on pace.</li>
       </ul>
-      <p class="muted" style="margin:0;font-size:.8rem">Sources: ACSM Position Stand on physical activity for weight loss (2009); Academy of Nutrition and Dietetics Adult Weight Management guideline; NIH research on the 3,500-calorie rule (Hall).</p>
+      <p class="muted" style="margin:0;font-size:.8rem">Sources: ACSM Position Stand on physical activity for weight loss (2009); Academy of Nutrition and Dietetics Adult Weight Management guideline; NIH research on the 3,500-calorie rule (Hall); NHS Couch to 5K running plan.</p>
     </div>
   </section>
 </div>
@@ -382,14 +393,14 @@ const fmtDate = s => parse(s).toLocaleDateString(undefined,{weekday:"short",mont
 const fmtShort = s => parse(s).toLocaleDateString(undefined,{month:"short",day:"numeric"});
 
 /* ---------- calories (MET) ---------- */
-const WALK = [[2.0,2.8],[2.5,3.0],[3.0,3.5],[3.5,4.3],[4.0,5.0],[4.5,7.0]];
-const RUN  = [[4.0,6.0],[5.0,8.3],[6.0,9.8],[7.0,11.0],[8.0,11.8],[9.0,12.8],[10.0,14.5]];
+const MET_WALK = [[2.0,2.8],[2.5,3.0],[3.0,3.5],[3.5,4.3],[4.0,5.0],[4.5,7.0]];
+const MET_RUN  = [[4.0,6.0],[5.0,8.3],[6.0,9.8],[7.0,11.0],[8.0,11.8],[9.0,12.8],[10.0,14.5]];
 function interp(t, s){ if(s<=t[0][0]) return t[0][1]; for(let i=1;i<t.length;i++){ if(s<=t[i][0]){ const [a,b]=[t[i-1],t[i]]; return a[1]+(b[1]-a[1])*(s-a[0])/(b[0]-a[0]); } } return t[t.length-1][1]; }
 function met(type, mph){
   if(!mph || !isFinite(mph)) mph = type==="run" ? 5.5 : type==="walkrun" ? 4.2 : 3.0;
-  if(type==="run") return interp(RUN, mph);
-  if(type==="walkrun") return (interp(WALK,mph)+interp(RUN,mph))/2;
-  return interp(WALK, mph);
+  if(type==="run") return interp(MET_RUN, mph);
+  if(type==="walkrun") return (interp(MET_WALK,mph)+interp(MET_RUN,mph))/2;
+  return interp(MET_WALK, mph);
 }
 function weightOn(date){
   let w = null;
@@ -429,7 +440,7 @@ function setSeg(el, attr, val){ el.querySelectorAll("button").forEach(b => b.set
 const getSeg = (el, attr) => { const b = el.querySelector('button[aria-pressed="true"]'); return b ? b.getAttribute(attr) : null; };
 seg($("#type-seg"),"data-type",()=>updatePreview());
 seg($("#effort-seg"),"data-effort",v=>{ /* toggle off if re-tapped handled below */ });
-seg($("#p-sex"),"data-v"); seg($("#p-act"),"data-v"); seg($("#p-pace"),"data-v");
+seg($("#p-sex"),"data-v"); seg($("#p-act"),"data-v"); seg($("#p-pace"),"data-v"); seg($("#p-track"),"data-v");
 
 /* ---------- timer + GPS ---------- */
 let timer = {running:false, startedAt:0, acc:0, gps:false, miles:0}, tick=null, wake=null, watchId=null, lastFix=null;
@@ -552,26 +563,74 @@ $("#w-form").addEventListener("submit", async e => {
 });
 
 /* ---------- plan ---------- */
-// 12-week progression for someone starting mostly inactive, building to the ACSM >250 min/week level.
-const PLAN = [
-  {min:50,  days:5, per:"10 min", focus:"Easy walks. The only goal is getting out the door."},
-  {min:75,  days:5, per:"15 min", focus:"Same easy pace, a few minutes longer."},
-  {min:100, days:5, per:"20 min", focus:"Comfortable pace. You should be able to talk in full sentences."},
-  {min:125, days:5, per:"25 min", focus:"Add a hill or a slightly longer route if it feels good."},
-  {min:150, days:5, per:"30 min", focus:"You're at the national activity guideline. Nice milestone."},
-  {min:150, days:5, per:"30 min", focus:"Make two walks brisk: breathing harder, talking in short phrases."},
-  {min:175, days:5, per:"35 min", focus:"Three brisk walks this week."},
-  {min:200, days:5, per:"40 min", focus:"Longer walks. Good shoes matter now."},
-  {min:210, days:5, per:"4 × 40 min + 1 × 50", focus:"One longer weekend walk."},
-  {min:225, days:5, per:"45 min", focus:"Mostly brisk. Easy days are fine when you're sore."},
-  {min:225, days:5, per:"45 min", focus:"Optional: try 1 minute of easy jogging every 5 minutes, a few times."},
-  {min:250, days:5, per:"50 min", focus:"You've reached the level research links to real weight loss."}
+// Walking track: 12 weeks for someone starting mostly inactive, building to the ACSM >250 min/week level.
+const WALK = [
+  {min:50,  line:"5 walks · 10 min", short:"5 × 10 min walks", focus:"Easy walks. The only goal is getting out the door."},
+  {min:75,  line:"5 walks · 15 min", short:"5 × 15 min walks", focus:"Same easy pace, a few minutes longer."},
+  {min:100, line:"5 walks · 20 min", short:"5 × 20 min walks", focus:"Comfortable pace. You should be able to talk in full sentences."},
+  {min:125, line:"5 walks · 25 min", short:"5 × 25 min walks", focus:"Add a hill or a slightly longer route if it feels good."},
+  {min:150, line:"5 walks · 30 min", short:"5 × 30 min walks", focus:"You're at the national activity guideline. Nice milestone."},
+  {min:150, line:"5 walks · 30 min", short:"5 × 30 min walks", focus:"Make two walks brisk: breathing harder, talking in short phrases."},
+  {min:175, line:"5 walks · 35 min", short:"5 × 35 min walks", focus:"Three brisk walks this week."},
+  {min:200, line:"5 walks · 40 min", short:"5 × 40 min walks", focus:"Longer walks. Good shoes matter now."},
+  {min:210, line:"5 walks · 40–50 min", short:"4 × 40 min + 1 × 50", focus:"One longer weekend walk."},
+  {min:225, line:"5 walks · 45 min", short:"5 × 45 min walks", focus:"Mostly brisk. Easy days are fine when you're sore."},
+  {min:225, line:"5 walks · 45 min", short:"5 × 45 min walks", focus:"Feeling strong? You can switch to the running plan any time."},
+  {min:250, line:"5 walks · 50 min", short:"5 × 50 min walks", focus:"You've reached the level research links to real weight loss."}
 ];
-const MAINT = {min:250, days:5, per:"50 min", focus:"Keep it up. 250 to 300 minutes a week also helps keep weight off. Walk/run intervals are fair game."};
+const WALK_KEEP = {min:250, line:"5 walks · 50 min", short:"5 × 50 min walks", focus:"Keep it up. 250 to 300 minutes a week also helps keep weight off."};
+// Running track: 4 walking-base weeks, then the NHS Couch to 5K progression (3 runs a week) plus 2 walks to keep weekly minutes up.
+const WU = "5 min brisk walk to warm up and 5 min walk to cool down.";
+const C25K = [
+  {min:170, run:"Jog 1 min, walk 1½ min. Repeat 8 times.", focus:"Jog slowly enough to talk. Speed doesn't matter yet."},
+  {min:170, run:"Jog 1½ min, walk 2 min. Repeat 6 times.", focus:"A little longer each jog. Slow down if you can't talk."},
+  {min:175, run:"Jog 1½ min, walk 1½ min, jog 3 min, walk 3 min. Do it twice.", focus:"Your first 3-minute jogs."},
+  {min:185, run:"Jog 3, walk 1½, jog 5, walk 2½, jog 3, walk 1½, jog 5 (minutes).", focus:"Hardest week so far. Repeat it if you need to. That's normal."},
+  {min:190, run:"Run 1: jog 5, walk 3, three times. Run 2: jog 8, walk 5, jog 8. Run 3: jog 20 min without stopping.", focus:"The first 20-minute jog is a big step. Go as slow as you like."},
+  {min:200, run:"Run 1: jog 5, walk 3, jog 8, walk 3, jog 5. Run 2: jog 10, walk 3, jog 10. Run 3: jog 25 min.", focus:"Last week with walk breaks."},
+  {min:205, run:"Jog 25 min without stopping.", focus:"All three runs are continuous now."},
+  {min:215, run:"Jog 28 min without stopping.", focus:"Almost there."},
+  {min:220, run:"Jog 30 min without stopping.", focus:"Graduation week: 30 minutes of running, about a 5K for many beginners."}
+];
+const RUN = [
+  ...WALK.slice(0,3),
+  {...WALK[3], focus:"Last walking-only week. Next week you start easy jog intervals."},
+  ...C25K.map((c,i)=>({min:c.min, line:"3 runs + 2 walks", short:"3 runs + 2 × 40 min walks", run:c.run, focus:c.focus, runs:3, c25k:i+1}))
+];
+const RUN_KEEP = {min:250, line:"3 runs + 2 walks", short:"3 × 30 min runs + 2 × 50 min walks", run:"Jog 30 min. Add a minute or two when it feels easy.", focus:"Keep running 3 times a week and walking twice. 250+ minutes a week keeps the weight coming off.", runs:3};
 const DAY = 864e5;
 const hasProfile = () => !!(settings.age && settings.heightIn && settings.goalWeight && settings.planStart);
-function planWeekIdx(ws){ if(!settings.planStart) return -1; return Math.round((weekStart(ws) - weekStart(parse(settings.planStart)))/(7*DAY)); }
-function planWeek(ws){ const i = planWeekIdx(ws); if(i<0 || !hasProfile()) return null; return {idx:i, ...(i<PLAN.length ? PLAN[i] : MAINT)}; }
+const isRun = () => settings.track === "run";
+function weeksBetween(a,b){ return Math.round((weekStart(b) - weekStart(a))/(7*DAY)); }
+// The full dated schedule for the chosen track.
+function schedule(){
+  if(!hasProfile()) return [];
+  const ps = weekStart(parse(settings.planStart));
+  let list;
+  if(isRun() && settings.runFrom){
+    const k = Math.max(0, weeksBetween(ps, parse(settings.runFrom)));
+    const walked = Array.from({length:k}, (_,i)=> i<WALK.length ? WALK[i] : WALK_KEEP);
+    list = [...walked, ...RUN.slice(4)];
+  } else list = isRun() ? RUN : WALK;
+  return list.map((e,i)=>({...e, pos:i, date:addDays(ps,i*7)}));
+}
+function planWeek(ws){
+  const sch = schedule(); if(!sch.length) return null;
+  const i = weeksBetween(sch[0].date, ws);
+  if(i<0) return null;
+  if(i<sch.length) return {...sch[i], total:sch.length, keep:false};
+  return {...(isRun()?RUN_KEEP:WALK_KEEP), pos:i, total:sch.length, keep:true};
+}
+async function switchTrack(t){
+  const next = {...settings, track:t, updatedAt:Date.now()};
+  const cur = planWeek(weekStart(new Date()));
+  if(t==="run"){
+    // Past the walking base on the walking plan? Start the jog intervals this week rather than skipping ahead.
+    next.runFrom = (cur && cur.pos >= 4) ? ymd(weekStart(new Date())) : null;
+  } else next.runFrom = null;
+  try{ await db.doc("settings/main").set(next); toast(t==="run" ? "Running plan on. Start slow!" : "Back to the walking plan."); }
+  catch(e){ toast("Couldn't save. Try again."); }
+}
 function goalFor(ws){ const p = planWeek(ws); return p ? p.min : 150; }
 function currentWeight(){ return weighins.length ? weighins[weighins.length-1].weight : (settings.startWeight || null); }
 function calorieTarget(lb){
@@ -629,6 +688,7 @@ function renderPlan(){
   $("#p-save").textContent = ready ? "Save changes" : "Build my plan";
   $("#p-cancel").hidden = !ready;
   $("#p-form-intro").hidden = ready;
+  $("#plan-eyebrow").textContent = isRun() ? "Walk-to-run plan" : "Walking plan";
   if(!ready){ body.innerHTML = ""; return; }
   const st = planStatus(), cal = calorieTarget(currentWeight());
   const now = new Date(), ws = weekStart(now), pw = planWeek(ws);
@@ -670,12 +730,14 @@ function renderPlan(){
     </div>`;
   }
   // This week
+  const runsThisWeek = inWeek(ws).filter(a=>a.type==="run"||a.type==="walkrun").length;
   if(pw){
     const pct = Math.min(1, wkMin/pw.min);
-    const title = pw.idx < PLAN.length ? `Week ${pw.idx+1} of ${PLAN.length}` : "Keep-it-off phase";
+    const title = pw.keep ? "Keep-it-off phase" : `Week ${pw.pos+1} of ${pw.total}`;
     html += `<div class="card stack">
       <div class="row between"><span class="eyebrow">This week · ${esc(title)}</span><span class="pill ${pct>=1?"good":""}">${wkMin} / ${pw.min} min</span></div>
-      <div style="font-family:var(--display);font-size:1.3rem;font-weight:700">${pw.days} walks · ${esc(pw.per)}</div>
+      <div style="font-family:var(--display);font-size:1.3rem;font-weight:700">${esc(pw.line)}</div>
+      ${pw.run ? `<div class="runbox"><div class="eyebrow">Each run${pw.c25k?` · Couch to 5K week ${pw.c25k}`:""}</div><div style="font-weight:600">${esc(pw.run)}</div><div class="muted" style="font-size:.85rem">${esc(WU)} Rest a day between runs. Walks go on the other days, about 40 minutes each.</div><div class="row between" style="font-size:.9rem"><span>Runs logged this week</span><span class="pill ${runsThisWeek>=pw.runs?"good":""}">${Math.min(runsThisWeek,pw.runs)} of ${pw.runs}</span></div></div>` : ""}
       <div class="muted">${esc(pw.focus)}</div>
       <div class="meter"><i style="width:${(pct*100).toFixed(1)}%"></i></div>
       <div style="font-size:.92rem">${pct>=1 ? "Weekly minutes done. Great week." : `${pw.min-wkMin} minutes left this week${(()=>{const dl=7-((now.getDay()+6)%7); return dl>0?`, ${dl} day${dl>1?"s":""} to do it`:""})()}.`}</div>
@@ -683,17 +745,24 @@ function renderPlan(){
   } else if(settings.planStart > today()){
     html += `<div class="card"><b>Your plan starts ${esc(fmtLong(parse(settings.planStart)))}.</b> <span class="muted">Easy 10-minute walks in week 1.</span></div>`;
   }
-  // 12 weeks
-  const psw = weekStart(parse(settings.planStart));
-  html += `<div class="card stack"><div class="row between"><h2>The 12 weeks</h2><span class="muted" style="font-size:.85rem">minutes / week</span></div><div class="weeks">` +
-    PLAN.map((p,i)=>{
-      const w = addDays(psw, i*7), done = Math.round(inWeek(w).reduce((t,a)=>t+(a.durationSec||0)/60,0));
-      const isCur = pw && pw.idx===i, past = w < ws;
+  // Track switch
+  if(!isRun()){
+    html += `<div class="card stack"><h2>Want to build up to running?</h2><div class="muted">The running plan adds three short jog-walk workouts a week, based on the NHS Couch to 5K program, and ends with 30 minutes of nonstop running. ${pw && pw.pos>=4 ? "You'd start the first jog intervals this week." : "It starts with the same walking weeks you're doing now."}</div><div><button class="btn small" type="button" id="to-run">Switch to the running plan</button></div></div>`;
+  }
+  // Schedule
+  const sch = schedule();
+  html += `<div class="card stack"><div class="row between"><h2>The ${sch.length} weeks</h2><span class="muted" style="font-size:.85rem">minutes / week</span></div><div class="weeks">` +
+    sch.map(p=>{
+      const w = p.date, done = Math.round(inWeek(w).reduce((t,a)=>t+(a.durationSec||0)/60,0));
+      const isCur = pw && !pw.keep && pw.pos===p.pos, past = w < ws;
       const stTxt = past ? (done>=p.min ? `<span style="color:var(--accent)">✓ ${done}</span>` : `<span class="muted">${done}</span>`) : isCur ? `<span style="color:var(--accent)">${done} so far</span>` : `<span class="muted">${esc(fmtShort(ymd(w)))}</span>`;
-      return `<div class="wk${isCur?" cur":""}"><span class="n">W${i+1}</span><div class="d"><div class="t num" style="color:var(--ink)">${p.min} min</div>${esc(p.days+" × "+p.per)}</div><div class="s num">${stTxt}</div></div>`;
+      return `<div class="wk${isCur?" cur":""}"><span class="n">W${p.pos+1}</span><div class="d"><div class="t num" style="color:var(--ink)">${p.min} min${p.c25k?` <span class="tag">jog wk ${p.c25k}</span>`:""}</div>${esc(p.short)}</div><div class="s num">${stTxt}</div></div>`;
     }).join("") + `</div></div>`;
+  if(isRun()) html += `<div class="row"><button class="linkbtn" type="button" id="to-walk">Switch back to the walking plan</button></div>`;
   html += `<div class="row"><button class="btn ghost small" type="button" id="p-edit">Edit plan details</button></div>`;
   body.innerHTML = html;
+  const tr = $("#to-run"); if(tr) tr.addEventListener("click",()=>switchTrack("run"));
+  const tw = $("#to-walk"); if(tw) tw.addEventListener("click",()=>switchTrack("walk"));
   const pe = $("#p-edit"); if(pe) pe.addEventListener("click",()=>{ editingPlan=true; fillPlanForm(); renderPlan(); form.scrollIntoView({behavior:"smooth",block:"start"}); });
 }
 let editingPlan = false;
@@ -706,6 +775,7 @@ function fillPlanForm(){
   $("#p-goal").value = settings.goalWeight ?? "";
   setSeg($("#p-act"),"data-v",String(settings.activity||1.2));
   setSeg($("#p-pace"),"data-v",String(settings.pace||1));
+  setSeg($("#p-track"),"data-v",settings.track||"walk");
   $("#p-start").value = settings.planStart || ymd(weekStart(new Date()));
 }
 $("#p-cancel").addEventListener("click",()=>{ editingPlan=false; renderPlan(); });
@@ -717,7 +787,9 @@ $("#p-form").addEventListener("submit", async e => {
   if(!db){ toast("Can't save right now."); return; }
   const firstTime = !hasProfile();
   const next = {...settings, sex:getSeg($("#p-sex"),"data-v")||"f", age, heightIn:ft*12+inch, goalWeight:goal,
-    activity:+getSeg($("#p-act"),"data-v")||1.2, pace:+getSeg($("#p-pace"),"data-v")||1, planStart:start, updatedAt:Date.now()};
+    activity:+getSeg($("#p-act"),"data-v")||1.2, pace:+getSeg($("#p-pace"),"data-v")||1, planStart:start, track:getSeg($("#p-track"),"data-v")||"walk", updatedAt:Date.now()};
+  if(next.track!=="run" || start!==settings.planStart) next.runFrom = null;
+  else if(settings.track!=="run"){ const cur = planWeek(weekStart(new Date())); next.runFrom = (cur && cur.pos>=4) ? ymd(weekStart(new Date())) : null; }
   if(firstTime || !settings.startWeight || start !== settings.planStart) next.startWeight = w;
   try{
     await db.doc("settings/main").set(next);
@@ -777,7 +849,7 @@ function render(){
 }
 function renderHomePlan(){
   const el = $("#home-plan");
-  if(!hasProfile()){ $("#weight-card").hidden = false; el.innerHTML = `<div class="card stack"><h2>Get a plan built for you</h2><div class="muted">Enter your height, weight and goal to get a daily calorie target, a 12-week walking schedule, and a goal date.</div><div><button class="btn small" data-goto="plan">Set up my plan</button></div></div>`; return; }
+  if(!hasProfile()){ $("#weight-card").hidden = false; el.innerHTML = `<div class="card stack"><h2>Get a plan built for you</h2><div class="muted">Enter your height, weight and goal to get a daily calorie target, a week-by-week walking or walk-to-run schedule, and a goal date.</div><div><button class="btn small" data-goto="plan">Set up my plan</button></div></div>`; return; }
   $("#weight-card").hidden = true;
   const st = planStatus(), cal = calorieTarget(currentWeight()), pw = planWeek(weekStart(new Date()));
   const pill = st ? ({done:"good",ahead:"good",on:"good",behind:"warn",wait:""}[st.status]) : "";
@@ -786,7 +858,7 @@ function renderHomePlan(){
     ${st?`<div class="row between"><span style="font-weight:600">${Math.round(st.pct*100)}% to ${st.goal} lb</span><span class="pill ${pill}">${esc(st.label)}</span></div><div class="meter"><i style="width:${(st.pct*100).toFixed(1)}%"></i><b style="left:calc(${(st.expPct*100).toFixed(1)}% - 1.5px)"></b></div>`:""}
     <div class="stats">
       <div class="stat"><b class="num">${cal?cal.target.toLocaleString():"–"}</b><span>calories a day</span></div>
-      <div class="stat"><b class="num">${pw ? (pw.idx<PLAN.length? "W"+(pw.idx+1) : "Keep") : "Soon"}</b><span>${pw ? esc(pw.days+" × "+pw.per) : "plan hasn't started"}</span></div>
+      <div class="stat"><b class="num">${pw ? (pw.keep ? "Keep" : "W"+(pw.pos+1)) : "Soon"}</b><span>${pw ? esc(pw.short) : "plan hasn't started"}</span></div>
       <div class="stat gold"><b style="font-size:1rem;line-height:1.35">${st?esc(st.goalDate.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})):"–"}</b><span>goal date</span></div>
     </div></div>`;
 }
